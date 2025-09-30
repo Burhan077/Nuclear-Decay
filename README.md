@@ -1,6 +1,6 @@
 ## Decay Chains
 
-One might think these must be disgusting and smelly bands of metal that demented people put on their neck but alas, if only humans were that fun.
+One might think these must be green, disgusting and smelly bands of iron that demented people put on their necks but alas, if only humans were that fun.
 
 Anyways, the project is actually some JavaScript and HTML I mashed together in order to create a tool that showcases the Porbability and Chain reactions of Radioactive Decay.
 
@@ -33,6 +33,7 @@ A live version of the project will soon be available [here]().
 This repository is intended to showcase the probability of decay of radioactive isotopes
 
 ---
+
 
 
 
