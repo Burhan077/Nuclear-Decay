@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Half-Life Hero: Nuclear Decay Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .result-card {
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+
+        .result-card.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .decay-path {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: dash 2s ease forwards;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .autocomplete-item:hover {
+            background-color: rgba(99, 102, 241, 0.1);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+    <div id="vanta-bg" class="fixed inset-0 z-0"></div>
+    <div class="relative z-10 max-w-4xl mx-auto px-4 py-12">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-3">
+                <span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">Half-Life
+                    Hero</span>
+            </h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                Calculate radioactive decay probabilities and visualize nuclear transformations
+            </p>
+        </header>
+
+        <main class="bg-white rounded-xl shadow-lg p-6 md:p-8 backdrop-blur-sm bg-opacity-90">
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Input Section -->
+                <div>
+                    <div class="mb-6">
+                        <label for="isotope-input"
+                            class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <i data-feather="search" class="mr-2 w-4 h-4"></i> Search Isotope
+                        </label>
+                        <div class="relative">
+                            <input type="text" id="isotope-input"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                placeholder="e.g. Uranium-238, C-14" autocomplete="off">
+                            <div id="autocomplete-results"
+                                class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg hidden max-h-60 overflow-y-auto">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="time-input" class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <i data-feather="clock" class="mr-2 w-4 h-4"></i> Time Interval
+                        </label>
+                        <div class="flex">
+                            <input type="number" id="time-input"
+                                class="flex-1 px-4 py-3 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                placeholder="Enter time" value="1">
+                            <select id="time-unit"
+                                class="px-4 py-3 border-t border-b border-r border-gray-300 rounded-r-lg bg-gray-50 focus:ring-2 focus:ring-indigo-500">
+                                <option value="seconds">seconds</option>
+                                <option value="minutes">minutes</option>
+                                <option value="hours">hours</option>
+                                <option value="days" selected>days</option>
+                                <option value="years">years</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="nuclei-input"
+                            class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <i data-feather="hash" class="mr-2 w-4 h-4"></i> Initial Nuclei Count (optional)
+                        </label>
+                        <input type="number" id="nuclei-input"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            placeholder="Default: 1">
+                    </div>
+
+                    <button id="calculate-btn"
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center">
+                        <i data-feather="zap" class="mr-2 w-5 h-5"></i> Calculate Decay
+                    </button>
+                </div>
+
+                <!-- Isotope Info Section -->
+                <div id="isotope-info" class="bg-gray-50 rounded-lg p-6">
+                    <div class="text-center">
+                        <i data-feather="help-circle" class="w-12 h-12 text-gray-400 mx-auto"></i>
+                        <p class="mt-3 text-gray-500">Select an isotope to see details</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results-section" class="mt-12 hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <i data-feather="bar-chart-2" class="mr-2 w-6 h-6"></i> Decay Results
+                </h2>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="result-card bg-green-50 rounded-lg p-6 border border-green-100">
+                        <h3 class="text-lg font-medium text-green-800 mb-3 flex items-center">
+                            <i data-feather="shield" class="mr-2 w-5 h-5"></i> Remaining Nuclei
+                        </h3>
+                        <p id="remaining-nuclei" class="text-3xl font-bold text-green-600">-</p>
+                        <p class="text-sm text-green-700 mt-2" id="remaining-percentage"></p>
+                    </div>
+
+                    <div class="result-card bg-yellow-50 rounded-lg p-6 border border-yellow-100">
+                        <h3 class="text-lg font-medium text-yellow-800 mb-3 flex items-center">
+                            <i data-feather="activity" class="mr-2 w-5 h-5"></i> Decay Probability
+                        </h3>
+                        <p id="decay-probability" class="text-3xl font-bold text-yellow-600">-</p>
+                        <p class="text-sm text-yellow-700 mt-2" id="decay-percentage"></p>
+                    </div>
+                </div>
+
+                <div class="result-card mt-6 bg-blue-50 rounded-lg p-6 border border-blue-100">
+                    <h3 class="text-lg font-medium text-blue-800 mb-4 flex items-center">
+                        <i data-feather="arrow-right-circle" class="mr-2 w-5 h-5"></i> Possible Decay Paths
+                    </h3>
+                    <div id="decay-paths" class="space-y-4">
+                        <div class="text-center">
+                            <i data-feather="arrow-down" class="w-6 h-6 text-gray-400 mx-auto"></i>
+                            <p class="mt-2 text-gray-500">Decay paths will appear here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="mt-12 text-center text-gray-500 text-sm">
+            <p>Made with <i data-feather="heart" class="w-4 h-4 inline text-red-500"></i> for nuclear science
+                enthusiasts</p>
+            <p class="mt-1">Data from various nuclear physics references</p>
+        </footer>
+    </div>
+
+    <script>
+        // Isotope database
+        const isotopeDatabase = {
+            "Uranium-238": {
+                symbol: "U",
+                mass: 238,
+                halfLife: 4.468e9, // years
+                halfLifeText: "4.468 billion years",
+                decayProducts: [
+                    { product: "Thorium-234", probability: 1.0, mode: "α" }
+                ]
+            },
+            "Carbon-14": {
+                symbol: "C",
+                mass: 14,
+                halfLife: 5730, // years
+                halfLifeText: "5,730 years",
+                decayProducts: [
+                    { product: "Nitrogen-14", probability: 1.0, mode: "β⁻" }
+                ]
+            },
+            "Iodine-131": {
+                symbol: "I",
+                mass: 131,
+                halfLife: 8.02, // days
+                halfLifeText: "8.02 days",
+                decayProducts: [
+                    { product: "Xenon-131", probability: 1.0, mode: "β⁻" }
+                ]
+            },
+            "Radium-226": {
+                symbol: "Ra",
+                mass: 226,
+                halfLife: 1600, // years
+                halfLifeText: "1,600 years",
+                decayProducts: [
+                    { product: "Radon-222", probability: 1.0, mode: "α" }
+                ]
+            },
+            "Potassium-40": {
+                symbol: "K",
+                mass: 40,
+                halfLife: 1.248e9, // years
+                halfLifeText: "1.248 billion years",
+                decayProducts: [
+                    { product: "Calcium-40", probability: 0.891, mode: "β⁻" },
+                    { product: "Argon-40", probability: 0.109, mode: "β⁺/EC" }
+                ]
+            },
+            "Tritium (Hydrogen-3)": {
+                symbol: "H",
+                mass: 3,
+                halfLife: 12.32, // years
+                halfLifeText: "12.32 years",
+                decayProducts: [
+                    { product: "Helium-3", probability: 1.0, mode: "β⁻" }
+                ]
+            },
+            "Plutonium-239": {
+                symbol: "Pu",
+                mass: 239,
+                halfLife: 24110, // years
+                halfLifeText: "24,110 years",
+                decayProducts: [
+                    { product: "Uranium-235", probability: 1.0, mode: "α" }
+                ]
+            },
+            "Cobalt-60": {
+                symbol: "Co",
+                mass: 60,
+                halfLife: 5.2714, // years
+                halfLifeText: "5.2714 years",
+                decayProducts: [
+                    { product: "Nickel-60", probability: 1.0, mode: "β⁻" }
+                ]
+            },
+            "Strontium-90": {
+                symbol: "Sr",
+                mass: 90,
+                halfLife: 28.8, // years
+                halfLifeText: "28.8 years",
+                decayProducts: [
+                    { product: "Yttrium-90", probability: 1.0, mode: "β⁻" }
+                ]
+            },
+            "Technetium-99m": {
+                symbol: "Tc",
+                mass: 99,
+                halfLife: 6.01, // hours
+                halfLifeText: "6.01 hours",
+                decayProducts: [
+                    { product: "Technetium-99", probability: 1.0, mode: "γ" }
+                ]
+            }
+        };
+
+        // DOM elements
+        const isotopeInput = document.getElementById('isotope-input');
+        const autocompleteResults = document.getElementById('autocomplete-results');
+        const timeInput = document.getElementById('time-input');
+        const timeUnit = document.getElementById('time-unit');
+        const nucleiInput = document.getElementById('nuclei-input');
+        const calculateBtn = document.getElementById('calculate-btn');
+        const isotopeInfo = document.getElementById('isotope-info');
+        const resultsSection = document.getElementById('results-section');
+        const remainingNuclei = document.getElementById('remaining-nuclei');
+        const remainingPercentage = document.getElementById('remaining-percentage');
+        const decayProbability = document.getElementById('decay-probability');
+        const decayPercentage = document.getElementById('decay-percentage');
+        const decayPaths = document.getElementById('decay-paths');
+
+        // Current selected isotope
+        let currentIsotope = null;
+
+        // Initialize Vanta.js background
+        VANTA.GLOBE({
+            el: "#vanta-bg",
+            mouseControls: true,
+            touchControls: true,
+            gyroControls: false,
+            minHeight: 200.00,
+            minWidth: 200.00,
+            scale: 1.00,
+            scaleMobile: 1.00,
+            color: 0x3f83f8,
+            backgroundColor: 0xf8fafc,
+            size: 0.8
+        });
+
+        // Initialize feather icons
+        feather.replace();
+
+        // Isotope search autocomplete
+        isotopeInput.addEventListener('input', () => {
+            const query = isotopeInput.value.toLowerCase();
+            if (query.length < 2) {
+                autocompleteResults.classList.add('hidden');
+                return;
+            }
+
+            const matches = Object.keys(isotopeDatabase).filter(iso =>
+                iso.toLowerCase().includes(query)
+            );
+
+            if (matches.length === 0) {
+                autocompleteResults.innerHTML = '<div class="p-3 text-gray-500">No matching isotopes found</div>';
+                autocompleteResults.classList.remove('hidden');
+                return;
+            }
+
+            autocompleteResults.innerHTML = matches.map(iso => `
+                <div class="autocomplete-item p-3 cursor-pointer hover:bg-indigo-50" data-isotope="${iso}">
+                    <div class="font-medium">${iso}</div>
+                    <div class="text-sm text-gray-500">${isotopeDatabase[iso].halfLifeText}</div>
+                </div>
+            `).join('');
+
+            autocompleteResults.classList.remove('hidden');
+
+            // Add click handlers to autocomplete items
+            document.querySelectorAll('.autocomplete-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const isotopeName = item.getAttribute('data-isotope');
+                    isotopeInput.value = isotopeName;
+                    autocompleteResults.classList.add('hidden');
+                    selectIsotope(isotopeName);
+                });
+            });
+        });
+
+        // Hide autocomplete when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!isotopeInput.contains(e.target) && !autocompleteResults.contains(e.target)) {
+                autocompleteResults.classList.add('hidden');
+            }
+        });
+
+        // Select isotope and display info
+        function selectIsotope(isotopeName) {
+            if (!isotopeDatabase[isotopeName]) return;
+
+            currentIsotope = isotopeDatabase[isotopeName];
+            currentIsotope.name = isotopeName;
+
+            // Update isotope info display
+            isotopeInfo.innerHTML = `
+                <div class="flex items-start">
+                    <div class="bg-indigo-100 rounded-lg p-3 mr-4">
+                        <div class="text-2xl font-bold text-indigo-800">${currentIsotope.symbol}</div>
+                        <div class="text-xs text-indigo-600 text-center">${currentIsotope.mass}</div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800">${isotopeName}</h3>
+                        <p class="text-gray-600 mt-1">
+                            <i data-feather="clock" class="w-4 h-4 inline mr-1"></i> 
+                            Half-life: ${currentIsotope.halfLifeText}
+                        </p>
+                        <div class="mt-3">
+                            <span class="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                                ${currentIsotope.decayProducts[0].mode} decay
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            feather.replace();
+        }
+
+        // Calculate decay
+        calculateBtn.addEventListener('click', () => {
+            if (!currentIsotope) {
+                alert('Please select an isotope first');
+                return;
+            }
+
+            const time = parseFloat(timeInput.value);
+            if (isNaN(time) || time <= 0) {
+                alert('Please enter a valid time interval');
+                return;
+            }
+
+            // Convert time to seconds based on selected unit
+            let timeInSeconds = time;
+            switch (timeUnit.value) {
+                case 'minutes': timeInSeconds *= 60; break;
+                case 'hours': timeInSeconds *= 3600; break;
+                case 'days': timeInSeconds *= 86400; break;
+                case 'years': timeInSeconds *= 31536000; break;
+                // seconds is default
+            }
+
+            // Get initial nuclei count (default to 1 if not specified)
+            const initialNuclei = nucleiInput.value ? parseFloat(nucleiInput.value) : 1;
+
+            // Calculate decay constant (λ = ln(2) / half-life)
+            // Convert half-life to seconds if it's in years (most are)
+            const halfLifeInSeconds = currentIsotope.halfLife * 31536000; // years to seconds
+            const decayConstant = Math.LN2 / halfLifeInSeconds;
+
+            // Calculate probability of decay (P = 1 - e^(-λt))
+            const decayProb = 1 - Math.exp(-decayConstant * timeInSeconds);
+
+            // Calculate remaining nuclei (N = N0 * e^(-λt))
+            const remaining = initialNuclei * Math.exp(-decayConstant * timeInSeconds);
+
+            // Display results
+            remainingNuclei.textContent = remaining.toExponential(4);
+            remainingPercentage.textContent = `${((remaining / initialNuclei) * 100).toFixed(6)}% of original nuclei remain`;
+
+            decayProbability.textContent = decayProb.toExponential(4);
+            decayPercentage.textContent = `${(decayProb * 100).toFixed(6)}% probability of decay in this period`;
+
+            // Display decay paths
+            decayPaths.innerHTML = currentIsotope.decayProducts.map(product => `
+                <div class="flex items-center justify-center space-x-4">
+                    <div class="bg-gray-100 rounded-lg p-2">
+                        <div class="text-lg font-bold text-gray-800">${currentIsotope.symbol}<sup>${currentIsotope.mass}</sup></div>
+                    </div>
+                    
+                    <div class="flex flex-col items-center">
+                        <div class="text-xs text-gray-500">${(product.probability * 100).toFixed(2)}%</div>
+                        <svg width="40" height="40" viewBox="0 0 40 40" class="text-gray-400">
+                            <path 
+                                class="decay-path"
+                                d="M10,20 L30,20" 
+                                stroke="currentColor" 
+                                stroke-width="2" 
+                                fill="none"
+                            />
+                            <path 
+                                class="decay-path"
+                                d="M25,15 L30,20 L25,25" 
+                                stroke="currentColor" 
+                                stroke-width="2" 
+                                fill="none"
+                            />
+                        </svg>
+                        <div class="text-xs px-2 py-1 bg-${product.mode === 'α' ? 'purple' : product.mode === 'β⁻' ? 'yellow' : 'blue'}-100 text-${product.mode === 'α' ? 'purple' : product.mode === 'β⁻' ? 'yellow' : 'blue'}-800 rounded">
+                            ${product.mode}
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-100 rounded-lg p-2">
+                        <div class="text-lg font-bold text-gray-800">${product.product.split('-')[0]}<sup>${product.product.split('-')[1]}</sup></div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Show results section with animation
+            resultsSection.classList.remove('hidden');
+            setTimeout(() => {
+                document.querySelectorAll('.result-card').forEach(card => {
+                    card.classList.add('show');
+                });
+
+                // Trigger the path animation
+                document.querySelectorAll('.decay-path').forEach((path, i) => {
+                    setTimeout(() => {
+                        path.style.animation = 'dash 1.5s ease forwards';
+                    }, i * 200);
+                });
+            }, 50);
+
+            // Replace feather icons again (since we added new ones)
+            setTimeout(() => feather.replace(), 100);
+        });
+
+        // Example: Select Carbon-14 by default for demo purposes
+        setTimeout(() => {
+            isotopeInput.value = "Carbon-14";
+            selectIsotope("Carbon-14");
+        }, 500);
+    </script>
+</body>
+
+</html>

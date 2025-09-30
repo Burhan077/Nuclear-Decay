@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuclear Decay Calculator Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js"></script>
+    <style>
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .result-card {
+            transition: all 0.3s ease;
+        }
+
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+    <div id="vanta-bg" class="fixed inset-0 z-0"></div>
+    <div class="relative z-10 max-w-6xl mx-auto px-4 py-12">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+                <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Nuclear Decay
+                    Calculator</span>
+            </h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                Calculate decay probabilities, remaining nuclei, and full decay chains for any radioactive isotope
+            </p>
+        </header>
+
+        <!-- Main Calculator -->
+        <div class="bg-white rounded-xl shadow-xl overflow-hidden mb-12">
+            <div class="p-6 md:p-8">
+                <!-- Isotope Search -->
+                <div class="mb-8">
+                    <label for="isotope-search" class="block text-lg font-medium text-gray-700 mb-2">
+                        <i data-feather="search" class="inline mr-2"></i> Search Isotope
+                    </label>
+                    <div class="relative">
+                        <input type="text" id="isotope-search"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                            placeholder="e.g. Uranium-238, Carbon-14" autocomplete="off">
+                        <div id="suggestions"
+                            class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg hidden max-h-60 overflow-y-auto">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time and Initial Nuclei Input -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label for="time-value" class="block text-lg font-medium text-gray-700 mb-2">
+                            <i data-feather="clock" class="inline mr-2"></i> Time Interval
+                        </label>
+                        <div class="flex">
+                            <input type="number" id="time-value"
+                                class="flex-1 px-4 py-3 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                                placeholder="Enter time" value="1">
+                            <select id="time-unit"
+                                class="px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg">
+                                <option value="seconds">Seconds</option>
+                                <option value="minutes">Minutes</option>
+                                <option value="hours">Hours</option>
+                                <option value="days">Days</option>
+                                <option value="years" selected>Years</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="initial-nuclei" class="block text-lg font-medium text-gray-700 mb-2">
+                            <i data-feather="hash" class="inline mr-2"></i> Initial Nuclei (optional)
+                        </label>
+                        <input type="number" id="initial-nuclei"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                            placeholder="Default: 1" min="1">
+                    </div>
+                </div>
+
+                <!-- Calculate Button -->
+                <div class="text-center">
+                    <button id="calculate-btn"
+                        class="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-lg shadow-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105">
+                        <i data-feather="activity" class="inline mr-2"></i> Calculate Decay
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results" class="hidden">
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <div class="result-card bg-white rounded-xl shadow-lg p-6 animate-fade-in"
+                    style="animation-delay: 0.1s">
+                    <div class="flex items-center mb-4">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+                            <i data-feather="percent"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800">Decay Probability</h3>
+                    </div>
+                    <p id="decay-probability" class="text-3xl font-bold text-blue-600 mb-2">0%</p>
+                    <p class="text-gray-600">Probability that a nucleus decays in the given time</p>
+                </div>
+
+                <div class="result-card bg-white rounded-xl shadow-lg p-6 animate-fade-in"
+                    style="animation-delay: 0.2s">
+                    <div class="flex items-center mb-4">
+                        <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+                            <i data-feather="hash"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800">Remaining Nuclei</h3>
+                    </div>
+                    <p id="remaining-nuclei" class="text-3xl font-bold text-purple-600 mb-2">0</p>
+                    <p class="text-gray-600">Expected number of nuclei remaining after decay</p>
+                </div>
+
+                <div class="result-card bg-white rounded-xl shadow-lg p-6 animate-fade-in"
+                    style="animation-delay: 0.3s">
+                    <div class="flex items-center mb-4">
+                        <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+                            <i data-feather="clock"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800">Half-Life</h3>
+                    </div>
+                    <p id="half-life" class="text-3xl font-bold text-green-600 mb-2">0 years</p>
+                    <p class="text-gray-600">Time for half the nuclei to decay</p>
+                </div>
+            </div>
+
+            <!-- Decay Chain Visualization -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-12 animate-fade-in" style="animation-delay: 0.4s">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <i data-feather="link" class="mr-3"></i> Full Decay Chain
+                </h2>
+                <div id="decay-chain" class="space-y-4">
+                    <!-- Decay chain will be generated here -->
+                </div>
+            </div>
+
+            <!-- Interpretation -->
+            <div class="bg-white rounded-xl shadow-lg p-6 animate-fade-in" style="animation-delay: 0.5s">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                    <i data-feather="info" class="mr-3"></i> Interpretation
+                </h2>
+                <div id="interpretation" class="prose max-w-none text-gray-700">
+                    <!-- Interpretation text will be generated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-16 text-center text-gray-600">
+            <p>Nuclear Decay Calculator Pro - Built with Physics & ❤️</p>
+            <p class="mt-2 text-sm">Data sources: NNDC, IAEA Nuclear Data Services</p>
+        </footer>
+    </div>
+
+    <script>
+        // Initialize Feather Icons
+        feather.replace();
+
+        // Initialize Vanta.js background
+        VANTA.GLOBE({
+            el: "#vanta-bg",
+            mouseControls: true,
+            touchControls: true,
+            gyroControls: false,
+            minHeight: 200.00,
+            minWidth: 200.00,
+            scale: 1.00,
+            scaleMobile: 1.00,
+            color: 0x3b82f6,
+            backgroundColor: 0xf8fafc,
+            size: 0.8
+        });
+
+        // Isotope Database
+        const isotopeDatabase = {
+            "Uranium-238": {
+                symbol: "U",
+                massNumber: 238,
+                halfLife: 4.468e9, // years
+                halfLifeUnit: "years",
+                decayType: "α",
+                decayProducts: [
+                    {
+                        isotope: "Thorium-234",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Uranium-235": {
+                symbol: "U",
+                massNumber: 235,
+                halfLife: 7.038e8, // years
+                halfLifeUnit: "years",
+                decayType: "α",
+                decayProducts: [
+                    {
+                        isotope: "Thorium-231",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Thorium-232": {
+                symbol: "Th",
+                massNumber: 232,
+                halfLife: 1.405e10, // years
+                halfLifeUnit: "years",
+                decayType: "α",
+                decayProducts: [
+                    {
+                        isotope: "Radium-228",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Carbon-14": {
+                symbol: "C",
+                massNumber: 14,
+                halfLife: 5730, // years
+                halfLifeUnit: "years",
+                decayType: "β⁻",
+                decayProducts: [
+                    {
+                        isotope: "Nitrogen-14",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Iodine-131": {
+                symbol: "I",
+                massNumber: 131,
+                halfLife: 8.02, // days
+                halfLifeUnit: "days",
+                decayType: "β⁻",
+                decayProducts: [
+                    {
+                        isotope: "Xenon-131",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Radium-226": {
+                symbol: "Ra",
+                massNumber: 226,
+                halfLife: 1600, // years
+                halfLifeUnit: "years",
+                decayType: "α",
+                decayProducts: [
+                    {
+                        isotope: "Radon-222",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Potassium-40": {
+                symbol: "K",
+                massNumber: 40,
+                halfLife: 1.248e9, // years
+                halfLifeUnit: "years",
+                decayType: "β⁻",
+                decayProducts: [
+                    {
+                        isotope: "Calcium-40",
+                        branchingRatio: 0.891
+                    },
+                    {
+                        isotope: "Argon-40",
+                        branchingRatio: 0.109
+                    }
+                ]
+            },
+            "Tritium": {
+                symbol: "H",
+                massNumber: 3,
+                halfLife: 12.32, // years
+                halfLifeUnit: "years",
+                decayType: "β⁻",
+                decayProducts: [
+                    {
+                        isotope: "Helium-3",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Plutonium-239": {
+                symbol: "Pu",
+                massNumber: 239,
+                halfLife: 2.411e4, // years
+                halfLifeUnit: "years",
+                decayType: "α",
+                decayProducts: [
+                    {
+                        isotope: "Uranium-235",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Cobalt-60": {
+                symbol: "Co",
+                massNumber: 60,
+                halfLife: 5.2714, // years
+                halfLifeUnit: "years",
+                decayType: "β⁻",
+                decayProducts: [
+                    {
+                        isotope: "Nickel-60",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Strontium-90": {
+                symbol: "Sr",
+                massNumber: 90,
+                halfLife: 28.79, // years
+                halfLifeUnit: "years",
+                decayType: "β⁻",
+                decayProducts: [
+                    {
+                        isotope: "Yttrium-90",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Technetium-99m": {
+                symbol: "Tc",
+                massNumber: 99,
+                halfLife: 6.01, // hours
+                halfLifeUnit: "hours",
+                decayType: "γ",
+                decayProducts: [
+                    {
+                        isotope: "Technetium-99",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Radon-222": {
+                symbol: "Rn",
+                massNumber: 222,
+                halfLife: 3.8235, // days
+                halfLifeUnit: "days",
+                decayType: "α",
+                decayProducts: [
+                    {
+                        isotope: "Polonium-218",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Polonium-210": {
+                symbol: "Po",
+                massNumber: 210,
+                halfLife: 138.376, // days
+                halfLifeUnit: "days",
+                decayType: "α",
+                decayProducts: [
+                    {
+                        isotope: "Lead-206",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Lead-210": {
+                symbol: "Pb",
+                massNumber: 210,
+                halfLife: 22.3, // years
+                halfLifeUnit: "years",
+                decayType: "β⁻",
+                decayProducts: [
+                    {
+                        isotope: "Bismuth-210",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Bismuth-210": {
+                symbol: "Bi",
+                massNumber: 210,
+                halfLife: 5.012, // days
+                halfLifeUnit: "days",
+                decayType: "β⁻",
+                decayProducts: [
+                    {
+                        isotope: "Polonium-210",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Bismuth-214": {
+                symbol: "Bi",
+                massNumber: 214,
+                halfLife: 19.9, // minutes
+                halfLifeUnit: "minutes",
+                decayType: "β⁻",
+                decayProducts: [
+                    {
+                        isotope: "Polonium-214",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Polonium-214": {
+                symbol: "Po",
+                massNumber: 214,
+                halfLife: 164.3, // microseconds
+                halfLifeUnit: "seconds",
+                decayType: "α",
+                decayProducts: [
+                    {
+                        isotope: "Lead-210",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Lead-206": {
+                symbol: "Pb",
+                massNumber: 206,
+                halfLife: Infinity, // stable
+                halfLifeUnit: "years",
+                decayType: "stable",
+                decayProducts: []
+            },
+            "Helium-3": {
+                symbol: "He",
+                massNumber: 3,
+                halfLife: Infinity, // stable
+                halfLifeUnit: "years",
+                decayType: "stable",
+                decayProducts: []
+            },
+            "Nitrogen-14": {
+                symbol: "N",
+                massNumber: 14,
+                halfLife: Infinity, // stable
+                halfLifeUnit: "years",
+                decayType: "stable",
+                decayProducts: []
+            },
+            "Xenon-131": {
+                symbol: "Xe",
+                massNumber: 131,
+                halfLife: Infinity, // stable
+                halfLifeUnit: "years",
+                decayType: "stable",
+                decayProducts: []
+            },
+            "Calcium-40": {
+                symbol: "Ca",
+                massNumber: 40,
+                halfLife: Infinity, // stable
+                halfLifeUnit: "years",
+                decayType: "stable",
+                decayProducts: []
+            },
+            "Argon-40": {
+                symbol: "Ar",
+                massNumber: 40,
+                halfLife: Infinity, // stable
+                halfLifeUnit: "years",
+                decayType: "stable",
+                decayProducts: []
+            },
+            "Nickel-60": {
+                symbol: "Ni",
+                massNumber: 60,
+                halfLife: Infinity, // stable
+                halfLifeUnit: "years",
+                decayType: "stable",
+                decayProducts: []
+            },
+            "Yttrium-90": {
+                symbol: "Y",
+                massNumber: 90,
+                halfLife: 64.0, // hours
+                halfLifeUnit: "hours",
+                decayType: "β⁻",
+                decayProducts: [
+                    {
+                        isotope: "Zirconium-90",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Zirconium-90": {
+                symbol: "Zr",
+                massNumber: 90,
+                halfLife: Infinity, // stable
+                halfLifeUnit: "years",
+                decayType: "stable",
+                decayProducts: []
+            },
+            "Technetium-99": {
+                symbol: "Tc",
+                massNumber: 99,
+                halfLife: 2.111e5, // years
+                halfLifeUnit: "years",
+                decayType: "β⁻",
+                decayProducts: [
+                    {
+                        isotope: "Ruthenium-99",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Ruthenium-99": {
+                symbol: "Ru",
+                massNumber: 99,
+                halfLife: Infinity, // stable
+                halfLifeUnit: "years",
+                decayType: "stable",
+                decayProducts: []
+            },
+            "Thorium-234": {
+                symbol: "Th",
+                massNumber: 234,
+                halfLife: 24.1, // days
+                halfLifeUnit: "days",
+                decayType: "β⁻",
+                decayProducts: [
+                    {
+                        isotope: "Protactinium-234",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Protactinium-234": {
+                symbol: "Pa",
+                massNumber: 234,
+                halfLife: 6.70, // hours
+                halfLifeUnit: "hours",
+                decayType: "β⁻",
+                decayProducts: [
+                    {
+                        isotope: "Uranium-234",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Uranium-234": {
+                symbol: "U",
+                massNumber: 234,
+                halfLife: 2.455e5, // years
+                halfLifeUnit: "years",
+                decayType: "α",
+                decayProducts: [
+                    {
+                        isotope: "Thorium-230",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Thorium-230": {
+                symbol: "Th",
+                massNumber: 230,
+                halfLife: 7.54e4, // years
+                halfLifeUnit: "years",
+                decayType: "α",
+                decayProducts: [
+                    {
+                        isotope: "Radium-226",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Radon-218": {
+                symbol: "Rn",
+                massNumber: 218,
+                halfLife: 35, // milliseconds
+                halfLifeUnit: "seconds",
+                decayType: "α",
+                decayProducts: [
+                    {
+                        isotope: "Polonium-214",
+                        branchingRatio: 1.0
+                    }
+                ]
+            },
+            "Polonium-218": {
+                symbol: "Po",
+                massNumber: 218,
+                halfLife: 3.10, // minutes
+                halfLifeUnit: "minutes",
+                decayType: "α",
+                decayProducts: [
+                    {
+                        isotope: "Lead-214",
+                        branchingRatio: 0.9998
+                    },
+                    {
+                        isotope: "Radon-218",
+                        branchingRatio: 0.0002
+                    }
+                ]
+            },
+            "Lead-214": {
+                symbol: "Pb",
+                massNumber: 214,
+                halfLife: 26.8, // minutes
+                halfLifeUnit: "minutes",
+                decayType: "β⁻",
+                decayProducts: [
+                    {
+                        isotope: "Bismuth-214",
+                        branchingRatio: 1.0
+                    }
+                ]
+            }
+        };
+
+        // Unit conversion factors (to seconds)
+        const timeUnits = {
+            seconds: 1,
+            minutes: 60,
+            hours: 3600,
+            days: 86400,
+            years: 31536000
+        };
+
+        // DOM Elements
+        const isotopeSearch = document.getElementById('isotope-search');
+        const suggestions = document.getElementById('suggestions');
+        const timeValue = document.getElementById('time-value');
+        const timeUnit = document.getElementById('time-unit');
+        const initialNuclei = document.getElementById('initial-nuclei');
+        const calculateBtn = document.getElementById('calculate-btn');
+        const results = document.getElementById('results');
+        const decayProbability = document.getElementById('decay-probability');
+        const remainingNuclei = document.getElementById('remaining-nuclei');
+        const halfLife = document.getElementById('half-life');
+        const decayChain = document.getElementById('decay-chain');
+        const interpretation = document.getElementById('interpretation');
+
+        // Autocomplete functionality
+        isotopeSearch.addEventListener('input', function () {
+            const input = this.value.toLowerCase();
+            suggestions.innerHTML = '';
+
+            if (input.length < 2) {
+                suggestions.classList.add('hidden');
+                return;
+            }
+
+            const matches = Object.keys(isotopeDatabase).filter(iso =>
+                iso.toLowerCase().includes(input)
+            ).slice(0, 8);
+
+            if (matches.length > 0) {
+                matches.forEach(match => {
+                    const div = document.createElement('div');
+                    div.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer';
+                    div.textContent = match;
+                    div.addEventListener('click', function () {
+                        isotopeSearch.value = match;
+                        suggestions.classList.add('hidden');
+                    });
+                    suggestions.appendChild(div);
+                });
+                suggestions.classList.remove('hidden');
+            } else {
+                const div = document.createElement('div');
+                div.className = 'px-4 py-2 text-gray-500';
+                div.textContent = 'No isotopes found';
+                suggestions.appendChild(div);
+                suggestions.classList.remove('hidden');
+            }
+        });
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', function (e) {
+            if (e.target !== isotopeSearch) {
+                suggestions.classList.add('hidden');
+            }
+        });
+
+        // Calculate decay
+        calculateBtn.addEventListener('click', function () {
+            const isotopeName = isotopeSearch.value.trim();
+
+            if (!isotopeName || !isotopeDatabase[isotopeName]) {
+                alert('Please select a valid isotope from the suggestions');
+                return;
+            }
+
+            const isotope = isotopeDatabase[isotopeName];
+            const time = parseFloat(timeValue.value) || 1;
+            const unit = timeUnit.value;
+            const initialN = parseInt(initialNuclei.value) || 1;
+
+            // Convert time to seconds
+            const timeInSeconds = time * timeUnits[unit];
+
+            // Convert half-life to seconds
+            const halfLifeInSeconds = isotope.halfLife * timeUnits[isotope.halfLifeUnit];
+
+            // Calculate decay constant (λ = ln(2) / half-life)
+            const decayConstant = Math.log(2) / halfLifeInSeconds;
+
+            // Calculate decay probability (P = 1 - e^(-λt))
+            const probability = 1 - Math.exp(-decayConstant * timeInSeconds);
+
+            // Calculate remaining nuclei (N = N0 * e^(-λt))
+            const remaining = initialN * Math.exp(-decayConstant * timeInSeconds);
+
+            // Display results
+            decayProbability.textContent = `${(probability * 100).toFixed(6)}%`;
+            remainingNuclei.textContent = remaining.toFixed(6);
+
+            // Format half-life display
+            let halfLifeDisplay = isotope.halfLife;
+            let halfLifeUnitDisplay = isotope.halfLifeUnit;
+
+            // Convert to more readable units if very large or small
+            if (halfLifeUnitDisplay === 'years' && halfLifeDisplay >= 1e6) {
+                halfLifeDisplay = (halfLifeDisplay / 1e6).toFixed(2);
+                halfLifeUnitDisplay = 'million years';
+            } else if (halfLifeUnitDisplay === 'years' && halfLifeDisplay >= 1e3) {
+                halfLifeDisplay = (halfLifeDisplay / 1e3).toFixed(2);
+                halfLifeUnitDisplay = 'thousand years';
+            } else if (halfLifeUnitDisplay === 'seconds' && halfLifeDisplay < 1) {
+                if (halfLifeDisplay < 1e-3) {
+                    halfLifeDisplay = (halfLifeDisplay * 1e6).toFixed(2);
+                    halfLifeUnitDisplay = 'microseconds';
+                } else {
+                    halfLifeDisplay = (halfLifeDisplay * 1000).toFixed(2);
+                    halfLifeUnitDisplay = 'milliseconds';
+                }
+            }
+
+            halfLife.textContent = `${halfLifeDisplay} ${halfLifeUnitDisplay}`;
+
+            // Generate decay chain
+            generateDecayChain(isotopeName, 1.0);
+
+            // Generate interpretation
+            generateInterpretation(isotopeName, probability, remaining, initialN, time, unit);
+
+            // Show results with animation
+            results.classList.remove('hidden');
+
+            // Scroll to results
+            setTimeout(() => {
+                results.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+        });
+
+        // Generate decay chain visualization
+        function generateDecayChain(isotopeName, currentProbability, depth = 0) {
+            const isotope = isotopeDatabase[isotopeName];
+            decayChain.innerHTML = ''; // Clear previous chain
+
+            // Recursive function to build the chain
+            function buildChain(iso, prob, chainSoFar = [], cumulativeProb = 1.0) {
+                const currentIso = isotopeDatabase[iso];
+
+                // Add current isotope to the chain
+                const chainStep = {
+                    isotope: iso,
+                    probability: prob,
+                    cumulativeProbability: cumulativeProb,
+                    decayType: currentIso.decayType,
+                    depth: chainSoFar.length
+                };
+
+                const newChain = [...chainSoFar, chainStep];
+
+                // If stable or at max depth, return this chain
+                if (currentIso.decayType === 'stable' || chainSoFar.length >= 10) {
+                    return [newChain];
+                }
+
+                // Otherwise continue with decay products
+                let allChains = [];
+
+                currentIso.decayProducts.forEach(product => {
+                    const productProb = prob * product.branchingRatio;
+                    const productCumulativeProb = cumulativeProb * product.branchingRatio;
+
+                    const productChains = buildChain(
+                        product.isotope,
+                        productProb,
+                        newChain,
+                        productCumulativeProb
+                    );
+
+                    allChains = [...allChains, ...productChains];
+                });
+
+                return allChains;
+            }
+
+            // Get all possible decay chains
+            const allChains = buildChain(isotopeName, currentProbability);
+
+            // Display the chains
+            allChains.forEach(chain => {
+                const chainContainer = document.createElement('div');
+                chainContainer.className = 'decay-chain-path space-y-2 mb-6';
+
+                chain.forEach((step, index) => {
+                    const stepDiv = document.createElement('div');
+                    stepDiv.className = `flex items-center ${index > 0 ? 'mt-2' : ''}`;
+
+                    // Add indentation based on depth
+                    if (step.depth > 0) {
+                        const indent = document.createElement('div');
+                        indent.className = 'w-8';
+                        stepDiv.appendChild(indent);
+                    }
+
+                    // Add arrow for steps after the first
+                    if (index > 0) {
+                        const arrow = document.createElement('div');
+                        arrow.className = 'mx-2 text-gray-500';
+                        arrow.innerHTML = '<i data-feather="arrow-right"></i>';
+                        stepDiv.appendChild(arrow);
+                    }
+
+                    // Isotope badge
+                    const isoBadge = document.createElement('div');
+                    isoBadge.className = 'px-3 py-1 rounded-full flex items-center';
+
+                    // Color based on decay type
+                    let bgColor = 'bg-gray-100';
+                    let textColor = 'text-gray-800';
+
+                    if (step.decayType === 'α') {
+                        bgColor = 'bg-blue-100';
+                        textColor = 'text-blue-800';
+                    } else if (step.decayType === 'β⁻') {
+                        bgColor = 'bg-green-100';
+                        textColor = 'text-green-800';
+                    } else if (step.decayType === 'β⁺') {
+                        bgColor = 'bg-purple-100';
+                        textColor = 'text-purple-800';
+                    } else if (step.decayType === 'γ') {
+                        bgColor = 'bg-yellow-100';
+                        textColor = 'text-yellow-800';
+                    } else if (step.decayType === 'stable') {
+                        bgColor = 'bg-gray-200';
+                        textColor = 'text-gray-800';
+                    }
+
+                    isoBadge.className += ` ${bgColor} ${textColor} mr-2`;
+
+                    const isoSymbol = document.createElement('span');
+                    isoSymbol.className = 'font-bold';
+                    isoSymbol.textContent = `${isotopeDatabase[step.isotope].symbol}-${isotopeDatabase[step.isotope].massNumber}`;
+
+                    isoBadge.appendChild(isoSymbol);
+
+                    // Decay type indicator
+                    if (step.decayType !== 'stable') {
+                        const decayTypeBadge = document.createElement('span');
+                        decayTypeBadge.className = 'ml-2 text-xs font-medium px-1.5 py-0.5 rounded bg-white';
+                        decayTypeBadge.textContent = step.decayType;
+                        isoBadge.appendChild(decayTypeBadge);
+                    } else {
+                        const stableBadge = document.createElement('span');
+                        stableBadge.className = 'ml-2 text-xs font-medium px-1.5 py-0.5 rounded bg-white';
+                        stableBadge.textContent = 'stable';
+                        isoBadge.appendChild(stableBadge);
+                    }
+
+                    stepDiv.appendChild(isoBadge);
+
+                    // Probability (for steps after the first)
+                    if (index > 0) {
+                        const probDiv = document.createElement('div');
+                        probDiv.className = 'ml-2 text-sm text-gray-600';
+                        probDiv.textContent = `(${(step.cumulativeProbability * 100).toFixed(4)}%)`;
+                        stepDiv.appendChild(probDiv);
+                    }
+
+                    chainContainer.appendChild(stepDiv);
+                });
+
+                decayChain.appendChild(chainContainer);
+
+                // Re-initialize Feather icons for the new elements
+                feather.replace();
+            });
+        }
+
+        // Generate human-readable interpretation
+        function generateInterpretation(isotopeName, probability, remaining, initialN, time, unit) {
+            const isotope = isotopeDatabase[isotopeName];
+            const timeDisplay = `${time} ${unit}`;
+            const probPercent = (probability * 100).toFixed(6);
+            const remainingPercent = ((remaining / initialN) * 100).toFixed(6);
+
+            let interpretationText = `
+                <h3 class="text-xl font-semibold mb-3">Understanding the Results</h3>
+                <p class="mb-4">
+                    For <strong>${initialN.toLocaleString()} nuclei</strong> of <strong>${isotope.symbol}-${isotope.massNumber}</strong> 
+                    over a period of <strong>${timeDisplay}</strong>:
+                </p>
+                
+                <ul class="list-disc pl-5 space-y-2 mb-4">
+                    <li>
+                        <strong>${probPercent}%</strong> of the nuclei will undergo radioactive decay.
+                    </li>
+                    <li>
+                        You can expect approximately <strong>${remaining.toFixed(2)} nuclei</strong> to remain undecayed 
+                        (${remainingPercent}% of the original amount).
+                    </li>
+                    <li>
+                        The half-life of ${isotope.symbol}-${isotope.massNumber} is <strong>${halfLife.textContent}</strong>, 
+                        which means half of the nuclei would decay in that time.
+                    </li>
+                </ul>
+            `;
+
+            // Add specific interpretation based on probability
+            if (probability < 0.01) {
+                interpretationText += `
+                    <p class="mb-4">
+                        This is a very small probability of decay, meaning ${isotope.symbol}-${isotope.massNumber} 
+                        is relatively stable over the time period you've specified.
+                    </p>
+                `;
+            } else if (probability < 0.1) {
+                interpretationText += `
+                    <p class="mb-4">
+                        There's a small but measurable probability of decay occurring in your sample 
+                        during the specified time period.
+                    </p>
+                `;
+            } else if (probability < 0.5) {
+                interpretationText += `
+                    <p class="mb-4">
+                        There's a significant probability that decay will occur in your sample, 
+                        but most nuclei will remain unchanged.
+                    </p>
+                `;
+            } else if (probability < 0.9) {
+                interpretationText += `
+                    <p class="mb-4">
+                        There's a high probability of decay - most of your sample will have undergone 
+                        radioactive transformation during this time period.
+                    </p>
+                `;
+            } else {
+                interpretationText += `
+                    <p class="mb-4">
+                        Virtually all of your sample will have decayed during this time period. 
+                        ${isotope.symbol}-${isotope.massNumber} is highly unstable over the timescale you've specified.
+                    </p>
+                `;
+            }
+
+            // Add note about decay chain
+            if (isotope.decayProducts.length > 0 && isotope.decayType !== 'stable') {
+                interpretationText += `
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mt-4">
+                        <p class="text-blue-700">
+                            <strong>Note:</strong> The decay products shown above may themselves be radioactive 
+                            and undergo further decay. The full decay chain shows all possible pathways 
+                            until stable isotopes are reached.
+                        </p>
+                    </div>
+                `;
+            }
+
+            interpretation.innerHTML = interpretationText;
+        }
+    </script>
+</body>
+
+</html>
