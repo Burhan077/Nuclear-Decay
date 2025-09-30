@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Decay Chains</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js"></script>
+  <style>
+    /* Remove arrows in Chrome, Safari, Edge, Opera */
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* Remove arrows in Firefox */
+  input[type=number] {
+    -moz-appearance: textfield;
+  }
+  </style>
+  
+  <style>
+    .fade-in {
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .glow {
+      box-shadow: 0 0 15px rgba(74, 222, 128, 0.6);
+    }
+
+    .radioactive {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.05);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .decay-chain-item {
+      transition: all 0.3s ease;
+    }
+
+    .decay-chain-item:hover {
+      transform: scale(1.02);
+      background-color: rgba(10, 158, 64, 0.15);
+    }
+  </style>
+</head>
+
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+  <div id="vanta-bg" class="fixed inset-0 -z-10 opacity-30"></div>
+  <div class="relative z-10 max-w-6xl mx-auto px-4 py-8">
+
+    <!-- Header -->
+    <header class="text-center mb-12">
+      <h1
+class="text-4xl font-extrabold bg-gradient-to-r from-green-400 to-blue-500 text-transparent bg-clip-text mb-2 leading-relaxed pb-1">        Decay Chains
+      </h1>
+      <p class="text-lg text-gray-300">Explore isotopes, calculate decay, and visualize decay chains</p>
+      <div class="mt-4 flex justify-center">
+        <i data-feather="activity" class="text-green-400 w-10 h-10 radioactive"></i>
+      </div>
+    </header>
+
+    <!-- Input Section -->
+    <section
+      class="bg-gray-800 rounded-xl shadow-2xl p-6 mb-8 backdrop-blur-sm bg-opacity-90 glow transition-all duration-300">
+      <div class="mb-6">
+        <label for="isotope-search" class="block text-lg font-medium text-gray-300 mb-2">Select Radioactive Isotope</label>
+        <div class="relative">
+          <input type="text" id="isotope-search"
+            class="w-full p-4 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-green-400 focus:border-transparent"
+            placeholder="e.g. Uranium 238 or Strontium 90">
+          <div id="suggestions"
+            class="absolute z-20 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg hidden max-h-60 overflow-y-auto text-gray-100">
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <label for="time-value" class="block text-lg font-medium text-gray-300 mb-2">Time Interval</label>
+          <div class="flex">
+            <input type="number" id="time-value"
+              class="flex-1 p-4 bg-gray-700 border border-gray-600 rounded-l-lg text-white focus:ring-2 focus:ring-green-400 focus:border-transparent"
+              placeholder="Enter time" min="0" step="0.01">
+            <select id="time-unit"
+              class="p-4 bg-gray-700 border border-gray-600 rounded-r-lg text-white focus:ring-2 focus:ring-green-400 focus:border-transparent">
+              <option value="seconds">seconds</option>
+              <option value="minutes">minutes</option>
+              <option value="hours">hours</option>
+              <option value="days">days</option>
+              <option value="years" selected>years</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label for="initial-nuclei" class="block text-lg font-medium text-gray-300 mb-2">Initial Nuclei (optional)</label>
+          <input type="number" id="initial-nuclei"
+            class="w-full p-4 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-green-400 focus:border-transparent"
+            placeholder="Default: 1" min="1" value="1">
+        </div>
+      </div>
+
+      <div class="text-center">
+        <button id="calculate-btn"
+          class="px-8 py-4 bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
+          <i data-feather="zap" class="mr-2"></i> Calculate Decay
+        </button>
+      </div>
+    </section>
+
+    <!-- Results Section -->
+    <section id="results-section" class="hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-gray-800 border border-gray-700 rounded-xl p-6 fade-in">
+          <div class="flex items-center mb-4">
+            <i data-feather="activity" class="text-green-400 mr-3"></i>
+            <h3 class="text-xl font-semibold text-green-400">Decay Probability</h3>
+          </div>
+          <div class="text-3xl font-bold text-green-300 mb-2" id="decay-probability">0%</div>
+          <p class="text-gray-400">Chance that a nucleus decays in the given time</p>
+        </div>
+
+        <div class="bg-gray-800 border border-gray-700 rounded-xl p-6 fade-in">
+          <div class="flex items-center mb-4">
+            <i data-feather="layers" class="text-blue-400 mr-3"></i>
+            <h3 class="text-xl font-semibold text-blue-400">Remaining Nuclei</h3>
+          </div>
+          <div class="text-3xl font-bold text-blue-300 mb-2" id="remaining-nuclei">0</div>
+          <p class="text-gray-400">Expected number of nuclei remaining</p>
+        </div>
+      </div>
+
+      <div class="bg-gray-800 rounded-xl shadow-xl p-6 backdrop-blur-sm bg-opacity-90 mb-8 border border-gray-700">
+        <div class="flex items-center mb-6">
+          <i data-feather="git-commit" class="text-purple-400 mr-3"></i>
+          <h2 class="text-2xl font-bold text-gray-200">Decay Chain</h2>
+        </div>
+        <div id="decay-chain" class="space-y-4"></div>
+      </div>
+
+      <div class="bg-gray-800 border border-yellow-600 rounded-xl p-6 fade-in">
+        <div class="flex items-center mb-4">
+          <i data-feather="info" class="text-yellow-400 mr-3"></i>
+          <h3 class="text-xl font-semibold text-yellow-400">Interpretation</h3>
+        </div>
+        <p class="text-gray-300" id="interpretation"></p>
+      </div>
+    </section>
+
+    <footer class="mt-12 text-center text-gray-500 text-sm">
+      <p>Made with <i data-feather="heart" class="inline w-4 h-4 text-red-400"></i> for nuclear science enthusiasts</p>
+    </footer>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    // Background
+    VANTA.GLOBE({
+      el: "#vanta-bg",
+      mouseControls: true,
+      touchControls: true,
+      gyroControls: false,
+      minHeight: 200.00,
+      minWidth: 200.00,
+      scale: 1.00,
+      scaleMobile: 1.00,
+      color: "#3b82f6",
+      backgroundColor: "#111827",
+      size: 0.8
+    });
+
+    // --- Isotope Database ---
+    const isotopeDatabase = {
+    // Uranium-238 series
+        "Uranium-238": { halfLife: 4.468e9, unit: "years", decayChain: ["Thorium-234"] },
+        "Thorium-234": { halfLife: 24.1, unit: "days", decayChain: ["Protactinium-234"] },
+        "Protactinium-234": { halfLife: 6.69, unit: "hours", decayChain: ["Uranium-234"] },
+        "Uranium-234": { halfLife: 2.455e5, unit: "years", decayChain: ["Thorium-230"] },
+        "Thorium-230": { halfLife: 7.538e4, unit: "years", decayChain: ["Radium-226"] },
+        "Radium-226": { halfLife: 1600, unit: "years", decayChain: ["Radon-222"] },
+        "Radon-222": { halfLife: 3.82, unit: "days", decayChain: ["Polonium-218"] },
+        "Polonium-218": { halfLife: 3.1, unit: "minutes", decayChain: ["Lead-214"] },
+        "Lead-214": { halfLife: 26.8, unit: "minutes", decayChain: ["Bismuth-214"] },
+        "Bismuth-214": { halfLife: 19.9, unit: "minutes", decayChain: ["Polonium-214"] },
+        "Polonium-214": { halfLife: 164e-6, unit: "seconds", decayChain: ["Lead-210"] },
+        "Lead-210": { halfLife: 22.3, unit: "years", decayChain: ["Bismuth-210"] },
+        "Bismuth-210": { halfLife: 5.01, unit: "days", decayChain: ["Polonium-210"] },
+        "Polonium-210": { halfLife: 138.4, unit: "days", decayChain: ["Lead-206"] },
+        "Lead-206": { halfLife: Infinity, unit: "stable", decayChain: [] },
+
+        // Uranium-235 series
+        "Uranium-235": { halfLife: 7.04e8, unit: "years", decayChain: ["Thorium-231"] },
+        "Thorium-231": { halfLife: 25.5, unit: "hours", decayChain: ["Protactinium-231"] },
+        "Protactinium-231": { halfLife: 3.276e4, unit: "years", decayChain: ["Actinium-227"] },
+        "Actinium-227": { halfLife: 21.8, unit: "years", decayChain: ["Thorium-227"] },
+        "Thorium-227": { halfLife: 18.7, unit: "days", decayChain: ["Radium-223"] },
+        "Radium-223": { halfLife: 11.4, unit: "days", decayChain: ["Radon-219"] },
+        "Radon-219": { halfLife: 3.96, unit: "seconds", decayChain: ["Polonium-215"] },
+        "Polonium-215": { halfLife: 1.78e-3, unit: "seconds", decayChain: ["Lead-211"] },
+        "Lead-211": { halfLife: 36.1, unit: "minutes", decayChain: ["Bismuth-211"] },
+        "Bismuth-211": { halfLife: 2.14, unit: "minutes", decayChain: ["Thallium-207"] },
+        "Thallium-207": { halfLife: 4.77, unit: "minutes", decayChain: ["Lead-207"] },
+        "Lead-207": { halfLife: Infinity, unit: "stable", decayChain: [] },
+
+        // Thorium-232 series
+        "Thorium-232": { halfLife: 1.405e10, unit: "years", decayChain: ["Radium-228"] },
+        "Radium-228": { halfLife: 5.75, unit: "years", decayChain: ["Actinium-228"] },
+        "Actinium-228": { halfLife: 6.15, unit: "hours", decayChain: ["Thorium-228"] },
+        "Thorium-228": { halfLife: 1.91, unit: "years", decayChain: ["Radium-224"] },
+        "Radium-224": { halfLife: 3.66, unit: "days", decayChain: ["Radon-220"] },
+        "Radon-220": { halfLife: 55.6, unit: "seconds", decayChain: ["Polonium-216"] },
+        "Polonium-216": { halfLife: 0.145, unit: "seconds", decayChain: ["Lead-212"] },
+        "Lead-212": { halfLife: 10.6, unit: "hours", decayChain: ["Bismuth-212"] },
+        "Bismuth-212": { halfLife: 60.6, unit: "minutes", decayChain: ["Polonium-212", "Thallium-208"] },
+        "Polonium-212": { halfLife: 0.3e-6, unit: "seconds", decayChain: ["Lead-208"] },
+        "Thallium-208": { halfLife: 3.05, unit: "minutes", decayChain: ["Lead-208"] },
+        "Lead-208": { halfLife: Infinity, unit: "stable", decayChain: [] },
+
+        // Other Non important isotopes
+        "Carbon-14": { halfLife: 5730, unit: "years", decayChain: ["Nitrogen-14"] },
+        "Iodine-131": { halfLife: 8.02, unit: "days", decayChain: ["Xenon-131"] },
+        "Cobalt-60": { halfLife: 5.27, unit: "years", decayChain: ["Nickel-60"] },
+        "Cesium-137": { halfLife: 30.17, unit: "years", decayChain: ["Barium-137m"] },
+        "Barium-137m": { halfLife: 2.55, unit: "minutes", decayChain: ["Barium-137"] },
+        "Technetium-99m": { halfLife: 6.01, unit: "hours", decayChain: ["Technetium-99"] },
+        "Technetium-99": { halfLife: 2.11e5, unit: "years", decayChain: ["Ruthenium-99"] },
+        "Strontium-90": { halfLife: 28.8, unit: "years", decayChain: ["Yttrium-90"] },
+        "Yttrium-90": { halfLife: 64, unit: "hours", decayChain: ["Zirconium-90"] },
+        "Plutonium-239": { halfLife: 2.41e4, unit: "years", decayChain: ["Uranium-235"] },
+        "Radium-223": { halfLife: 11.4, unit: "days", decayChain: ["Radon-219"] },
+        "Radon-219": { halfLife: 3.96, unit: "seconds", decayChain: ["Polonium-215"] },
+        "Polonium-215": { halfLife: 1.78e-3, unit: "seconds", decayChain: ["Lead-211"] },
+        "Lead-211": { halfLife: 36.1, unit: "minutes", decayChain: ["Bismuth-211"] },
+        "Bismuth-211": { halfLife: 2.14, unit: "minutes", decayChain: ["Thallium-207"] },
+        "Thallium-207": { halfLife: 4.77, unit: "minutes", decayChain: ["Lead-207"] },
+        "Lead-207": { halfLife: Infinity, unit: "stable", decayChain: [] },
+        "Iodine-129": { halfLife: 1.57e7, unit: "years", decayChain: ["Xenon-129"] },
+        "Xenon-129": { halfLife: Infinity, unit: "stable", decayChain: [] },
+        "Tritium": { halfLife: 12.32, unit: "years", decayChain: ["Helium-3"] },
+        "Deuterium": { halfLife: Infinity, unit: "stable", decayChain: [] },
+        "Helium-3": { halfLife: Infinity, unit: "stable", decayChain: [] },
+        "Helium-4": { halfLife: Infinity, unit: "stable", decayChain: [] },
+        "Neutron": { halfLife: 14.7, unit: "minutes", decayChain: ["Proton", "Electron", "Antineutrino"] },
+        "Proton": { halfLife: Infinity, unit: "stable", decayChain: [] },
+        "Electron": { halfLife: Infinity, unit: "stable", decayChain: [] },
+        "Antineutrino": { halfLife: Infinity, unit: "stable", decayChain: [] },
+        "Radon-222": { halfLife: 3.82, unit: "days", decayChain: ["Polonium-218"] },
+        "Polonium-218": { halfLife: 3.1, unit: "minutes", decayChain: ["Lead-214"] },
+        "Lead-214": { halfLife: 26.8, unit: "minutes", decayChain: ["Bismuth-214"] },
+        "Fluorine-18": { halfLife: 109.8, unit: "minutes", decayChain: ["Oxygen-18"] },
+        "Oxygen-18": { halfLife: Infinity, unit: "stable", decayChain: [] },
+        "Nitrogen-13": { halfLife: 9.97, unit: "minutes", decayChain: ["Carbon-13"] },
+        "Carbon-13": { halfLife: Infinity, unit: "stable", decayChain: [] },
+        "Phosphorus-32": { halfLife: 14.29, unit: "days", decayChain: ["Sulfur-32"] },
+        "Sulfur-32": { halfLife: Infinity, unit: "stable", decayChain: [] },
+        "Sulfur-35": { halfLife: 87.51, unit: "days", decayChain: ["Chlorine-35"] },
+        "Chlorine-35": { halfLife: Infinity, unit: "stable", decayChain: [] },
+        "Chlorine-36": { halfLife: 3.01e5, unit: "years", decayChain: ["Argon-36"] },
+        "Argon-36": { halfLife: Infinity, unit: "stable", decayChain: [] },
+        "Argon-39": { halfLife: 269, unit: "years", decayChain: ["Potassium-39"] },
+        "Potassium-39": { halfLife: Infinity, unit: "stable", decayChain: [] },
+        "Potassium-40": { halfLife: 1.248e9, unit: "years", decayChain: ["Calcium-40", "Argon-40"] },
+        "Calcium-40": { halfLife: Infinity, unit: "stable", decayChain: [] },
+        "Cesium-142": { halfLife: 1.22, unit: "minutes", decayChain: ["Barium-142"] },
+        "Barium-142": { halfLife: Infinity, unit: "stable", decayChain: [] }
+        //Add more isotopes as needed
+    };
+
+
+    // --- Helpers ---
+    function convertToYears(value, unit) {
+      const conversion = { seconds: 1 / (60 * 60 * 24 * 365), minutes: 1 / (60 * 24 * 365), hours: 1 / (24 * 365), days: 1 / 365, years: 1 };
+      return value * (conversion[unit] || 1);
+    }
+
+    function formatHalfLife(value, unit) {
+      return `${value} ${unit}`;
+    }
+
+    // --- Search Suggestions ---
+    const searchInput = document.getElementById("isotope-search");
+    const suggestionsBox = document.getElementById("suggestions");
+
+    searchInput.addEventListener("input", () => {
+      const query = searchInput.value.toLowerCase();
+      suggestionsBox.innerHTML = "";
+      if (!query) {
+        suggestionsBox.classList.add("hidden");
+        return;
+      }
+
+      const matches = Object.keys(isotopeDatabase).filter(key => key.toLowerCase().includes(query));
+      if (matches.length === 0) {
+        suggestionsBox.classList.add("hidden");
+        return;
+      }
+
+      matches.forEach(match => {
+        const div = document.createElement("div");
+        div.textContent = match;
+        div.className = "px-4 py-2 hover:bg-gray-700 cursor-pointer";
+        div.addEventListener("click", () => {
+          searchInput.value = match;
+          suggestionsBox.classList.add("hidden");
+        });
+        suggestionsBox.appendChild(div);
+      });
+
+      suggestionsBox.classList.remove("hidden");
+    });
+
+    // --- Calculate Decay ---
+    document.getElementById("calculate-btn").addEventListener("click", () => {
+      const isotopeName = searchInput.value.trim();
+      if (!isotopeDatabase[isotopeName]) {
+        alert("Please select a valid isotope from the list.");
+        return;
+      }
+
+      const isotope = isotopeDatabase[isotopeName];
+      const timeValue = parseFloat(document.getElementById("time-value").value) || 0;
+      const timeUnit = document.getElementById("time-unit").value;
+      const initialNuclei = parseInt(document.getElementById("initial-nuclei").value) || 1;
+
+      const timeInYears = convertToYears(timeValue, timeUnit);
+      const halfLifeInYears = convertToYears(isotope.halfLife, isotope.unit);
+
+      const decayConstant = Math.log(2) / halfLifeInYears;
+      const decayProbability = 1 - Math.exp(-decayConstant * timeInYears);
+      const remainingNuclei = initialNuclei * Math.exp(-decayConstant * timeInYears);
+
+      document.getElementById("decay-probability").textContent = (decayProbability * 100).toFixed(2) + "%";
+      document.getElementById("remaining-nuclei").textContent = remainingNuclei.toFixed(2);
+
+      const chainDiv = document.getElementById("decay-chain");
+      chainDiv.innerHTML = "";
+      isotope.decayChain.forEach((step, i) => {
+        const div = document.createElement("div");
+        div.className = "decay-chain-item p-3 rounded-lg bg-gray-700 border border-gray-600";
+        div.innerHTML = `<strong class="text-green-300">Step ${i + 1}:</strong> ${step}`;
+        chainDiv.appendChild(div);
+      });
+
+      const interpretation = `For ${isotopeName} with half-life ${formatHalfLife(isotope.halfLife, isotope.unit)}, after ${timeValue} ${timeUnit}, about ${(decayProbability * 100).toFixed(2)}% of nuclei have decayed.`;
+      document.getElementById("interpretation").textContent = interpretation;
+
+      document.getElementById("results-section").classList.remove("hidden");
+    });
+
+    feather.replace();
+  </script>
+</body>
+</html>
