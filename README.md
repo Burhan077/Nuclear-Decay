@@ -26,13 +26,14 @@ I was inspired by [NileRed](https://youtu.be/Gbgk8d3Y1Q4?si=Bg-MuNg7WdOOJ75) on 
 
 ##  Deployment
 
-A live version of the project will soon be available [here](). 
+A live version of the project will soon be available [here](https://burhan077.github.io/decay.github.io/). 
 
 ##  Additional Notes
 
 This repository is intended to showcase the probability of decay of radioactive isotopes
 
 ---
+
 
 
 
