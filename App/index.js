@@ -64,7 +64,7 @@ const isotopeDatabase = {
   "Carbon-14": { halfLife: 5730, unit: "years", decayChain: ["Nitrogen-14"] },
   "Iodine-131": { halfLife: 8.02, unit: "days", decayChain: ["Xenon-131"] },
   "Cobalt-60": { halfLife: 5.27, unit: "years", decayChain: ["Nickel-60"] },
-  "Cesium-137": { halfLife: 30.17, unit: "years", decayChain: ["Barium-137m"] },
+  "Cesium-137": { halfLife: 30.17, unit: "years", decayChain: ["Barium-137"] },
   "Barium-137m": { halfLife: 2.55, unit: "minutes", decayChain: ["Barium-137"] },
   "Technetium-99m": { halfLife: 6.01, unit: "hours", decayChain: ["Technetium-99"] },
   "Technetium-99": { halfLife: 2.11e5, unit: "years", decayChain: ["Ruthenium-99"] },
@@ -187,3 +187,4 @@ document.getElementById("calculate-btn").addEventListener("click", () => {
 });
 
 feather.replace();
+
